@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1200">
+<title>EEV — Unipolar Stepper Motor Training Visual</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── Reset ───────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#060a10;
+  --panel:#0a1422;
+  --border:#182638;
+  --teal:#00c8d8;
+  --teal-dim:#006878;
+  --teal-glow:rgba(0,200,216,.18);
+  --copper:#b87333;
+  --brass:#c5a84a;
+  --text:#6a8aaa;
+  --text-bright:#c0d8e8;
+  --text-dim:#283848;
+  --red:#e53535;
+  --blue:#3b82f6;
+  --white:#d8eaf4;
+  --yellow:#f6c90e;
+  --orange:#f97316;
+}
+
+html,body{
+  width:1200px;height:675px;
+  overflow:hidden;
+  background:var(--bg);
+  font-family:'Rajdhani',sans-serif;
+  color:var(--text-bright);
+}
+
+/* ── Slide ──────────────────────────────────────────── */
+#slide{
+  display:flex;width:1200px;height:675px;
+  position:relative;overflow:hidden;
+}
+#slide::before{
+  content:'';position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(0,200,216,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,200,216,.04) 1px,transparent 1px);
+  background-size:32px 32px;
+  pointer-events:none;z-index:0;
+}
+/* corner accent */
+#slide::after{
+  content:'';position:absolute;
+  top:0;left:0;width:200px;height:200px;
+  background:radial-gradient(ellipse at top left,rgba(0,200,216,.06),transparent 70%);
+  pointer-events:none;z-index:0;
+}
+
+/* ── Left Panel ─────────────────────────────────────── */
+#lp{
+  width:570px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;z-index:1;
+}
+#eev{width:470px;height:570px;display:block}
+
+/* ── Divider ────────────────────────────────────────── */
+#div{
+  width:1px;flex-shrink:0;position:relative;z-index:1;
+  background:linear-gradient(to bottom,
+    transparent 0%,var(--border) 12%,
+    var(--teal-dim) 50%,
+    var(--border) 88%,transparent 100%);
+}
+
+/* ── Right Panel ────────────────────────────────────── */
+#rp{
+  flex:1;padding:22px 26px;
+  display:flex;flex-direction:column;gap:12px;
+  position:relative;z-index:1;overflow:hidden;
+}
+
+/* ── Title ──────────────────────────────────────────── */
+.pt{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:30px;letter-spacing:.07em;
+  color:var(--teal);line-height:1;
+  text-shadow:0 0 28px rgba(0,200,216,.5);
+}
+.ps{
+  font-size:11px;font-weight:600;letter-spacing:.18em;
+  color:var(--text);text-transform:uppercase;margin-top:3px;
+}
+
+/* ── Status Row ─────────────────────────────────────── */
+.srow{display:flex;align-items:center;gap:10px}
+
+.badge12{
+  display:flex;align-items:center;gap:6px;
+  background:rgba(229,53,53,.1);border:1px solid rgba(229,53,53,.28);
+  border-radius:3px;padding:3px 9px;
+  font-family:'Share Tech Mono',monospace;font-size:12px;
+  color:#e07070;letter-spacing:.05em;
+}
+.bdot{
+  width:6px;height:6px;border-radius:50%;background:#e53535;
+  animation:bdotAnim 1.1s ease-in-out infinite;
+}
+@keyframes bdotAnim{
+  0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(229,53,53,.6)}
+  50%{opacity:.5;box-shadow:0 0 0 5px rgba(229,53,53,0)}
+}
+
+.dirindicator{
+  font-family:'Share Tech Mono',monospace;font-size:11px;
+  letter-spacing:.08em;padding:3px 9px;border-radius:3px;
+  transition:all .3s;
+}
+.dir-open{color:#4ade80;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.28)}
+.dir-close{color:#fb923c;background:rgba(251,146,60,.1);border:1px solid rgba(251,146,60,.28)}
+
+.steps-total{
+  margin-left:auto;font-family:'Share Tech Mono',monospace;
+  font-size:9px;color:var(--text-dim);letter-spacing:.12em;
+}
+
+/* ── Section Labels ─────────────────────────────────── */
+.slbl{
+  font-size:9px;font-weight:700;letter-spacing:.22em;
+  color:var(--text-dim);text-transform:uppercase;margin-bottom:5px;
+}
+
+/* ── Wire Legend ────────────────────────────────────── */
+.wlegend{display:flex;flex-direction:column;gap:3px}
+.wrow{
+  display:flex;align-items:center;gap:9px;
+  padding:4px 9px;border-radius:3px;
+  border:1px solid transparent;
+  background:rgba(255,255,255,.02);
+  transition:all .2s;
+}
+.wrow.active{
+  background:rgba(255,255,255,.055);
+  border-color:var(--ac,var(--border));
+  box-shadow:0 0 10px var(--aglow,transparent);
+}
+.wdot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.wlbl{font-family:'Share Tech Mono',monospace;font-size:11px;flex:1;color:var(--text);transition:color .2s}
+.wrow.active .wlbl{color:var(--text-bright)}
+.wfunc{font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--text-dim)}
+
+/* ── Firing Sequence ────────────────────────────────── */
+.fseq{display:flex;gap:5px}
+.scell{
+  flex:1;padding:7px 5px;border-radius:3px;
+  border:1px solid var(--border);text-align:center;
+  transition:all .2s;
+}
+.scell .snum{
+  font-family:'Share Tech Mono',monospace;font-size:9px;
+  color:var(--text-dim);display:block;margin-bottom:2px;
+}
+.scell .swire{
+  font-family:'Rajdhani',sans-serif;font-weight:700;
+  font-size:13px;letter-spacing:.04em;display:block;
+}
+.scell.active{
+  border-color:var(--ac);
+  background:var(--abg,rgba(0,200,216,.08));
+  box-shadow:0 0 10px var(--aglow,transparent);
+}
+
+/* ── Readouts ───────────────────────────────────────── */
+.readouts{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.rbox{
+  background:rgba(0,0,0,.35);
+  border:1px solid var(--border);
+  border-radius:3px;padding:9px 11px;
+}
+.rlbl{
+  font-size:8px;font-weight:700;letter-spacing:.2em;
+  color:var(--text-dim);text-transform:uppercase;
+  display:block;margin-bottom:3px;
+}
+.rval{
+  font-family:'Share Tech Mono',monospace;
+  font-size:22px;color:var(--teal);line-height:1;
+}
+.runit{font-size:10px;color:var(--text-dim);margin-left:3px}
+
+/* ── Controls ───────────────────────────────────────── */
+.controls{display:flex;gap:6px;margin-top:auto}
+.cbtn{
+  flex:1;padding:9px 6px;
+  background:rgba(255,255,255,.025);
+  border:1px solid var(--border);border-radius:3px;
+  color:var(--text);font-family:'Rajdhani',sans-serif;
+  font-weight:700;font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;cursor:pointer;
+  transition:all .15s;
+}
+.cbtn:hover{background:rgba(0,200,216,.07);border-color:var(--teal-dim);color:var(--teal)}
+.cbtn:active{transform:scale(.97)}
+
+/* ── Footer ─────────────────────────────────────────── */
+.footer{
+  font-size:8px;color:var(--text-dim);
+  letter-spacing:.12em;text-transform:uppercase;
+}
+
+/* ── SVG Wire Pulse Animation ───────────────────────── */
+.wpulse{
+  stroke-dasharray:9 7;stroke-dashoffset:0;
+  stroke-linecap:round;opacity:0;
+  transition:opacity .15s;
+}
+.wpulse.live{
+  opacity:1;
+  animation:dashFlow var(--spd,0.38s) linear infinite;
+}
+@keyframes dashFlow{
+  from{stroke-dashoffset:16}
+  to{stroke-dashoffset:0}
+}
+
+/* coil active animation */
+@keyframes coilBright{
+  0%,100%{opacity:.7}50%{opacity:1}
+}
+</style>
+</head>
+<body>
+<div id="slide">
+
+<!-- ══════════ LEFT PANEL: SVG Illustration ══════════ -->
+<div id="lp">
+<svg id="eev" viewBox="0 0 470 570" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <!-- Brass gradient (horizontal) -->
+  <linearGradient id="bG" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%"   stop-color="#6a5015"/>
+    <stop offset="25%"  stop-color="#c0a040"/>
+    <stop offset="55%"  stop-color="#e8cc72"/>
+    <stop offset="80%"  stop-color="#b09030"/>
+    <stop offset="100%" stop-color="#604810"/>
+  </linearGradient>
+  <!-- Copper pipe gradient (vertical) -->
+  <linearGradient id="cpG" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%"   stop-color="#d49040"/>
+    <stop offset="40%"  stop-color="#a86830"/>
+    <stop offset="100%" stop-color="#784020"/>
+  </linearGradient>
+  <!-- Steel / motor housing gradient -->
+  <linearGradient id="stG" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%"   stop-color="#0c1420"/>
+    <stop offset="50%"  stop-color="#182435"/>
+    <stop offset="100%" stop-color="#0c1420"/>
+  </linearGradient>
+  <!-- Rotor gradient -->
+  <linearGradient id="rtG" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%"   stop-color="#141e2c"/>
+    <stop offset="50%"  stop-color="#243040"/>
+    <stop offset="100%" stop-color="#141e2c"/>
+  </linearGradient>
+  <!-- Lead screw gradient -->
+  <linearGradient id="lsG" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%"  stop-color="#283848"/>
+    <stop offset="50%" stop-color="#8898b0"/>
+    <stop offset="100%" stop-color="#283848"/>
+  </linearGradient>
+  <!-- Needle gradient -->
+  <linearGradient id="ndG" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%"  stop-color="#303848"/>
+    <stop offset="50%" stop-color="#9aaab8"/>
+    <stop offset="100%" stop-color="#303848"/>
+  </linearGradient>
+  <!-- Winding pattern: horizontal copper strands -->
+  <pattern id="wndPat" x="0" y="0" width="480" height="7" patternUnits="userSpaceOnUse">
+    <rect width="480" height="7" fill="#1c0c04"/>
+    <rect y="1" width="480" height="5" rx="2.5" fill="#b06020" opacity=".85"/>
+  </pattern>
+  <!-- Glow / blur filter -->
+  <filter id="gf" x="-60%" y="-60%" width="220%" height="220%">
+    <feGaussianBlur stdDeviation="10"/>
+  </filter>
+  <filter id="gfSm" x="-40%" y="-40%" width="180%" height="180%">
+    <feGaussianBlur stdDeviation="6"/>
+  </filter>
+  <!-- Valve interior gradient -->
+  <linearGradient id="viG" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%"   stop-color="#161008"/>
+    <stop offset="100%" stop-color="#080604"/>
+  </linearGradient>
+</defs>
+
+<!-- ── center axis guide ── -->
+<line x1="235" y1="0" x2="235" y2="570" stroke="rgba(0,200,216,.035)" stroke-width="1" stroke-dasharray="4 8"/>
+
+<!-- ══ WIRE ENTRY ══════════════════════════════════ -->
+<!-- Static base wires (dimmed) -->
+<line x1="175" y1="0" x2="175" y2="34" stroke="#1a3560" stroke-width="4"/>
+<line x1="199" y1="0" x2="199" y2="34" stroke="#253038" stroke-width="4"/>
+<line x1="223" y1="0" x2="223" y2="34" stroke="#601515" stroke-width="4"/>
+<line x1="247" y1="0" x2="247" y2="34" stroke="#604010" stroke-width="4"/>
+<line x1="271" y1="0" x2="271" y2="34" stroke="#602508" stroke-width="4"/>
+
+<!-- Animated pulse overlays -->
+<line id="wp-blue"   class="wpulse" x1="175" y1="0" x2="175" y2="34" stroke="#3b82f6" stroke-width="3.5"/>
+<line id="wp-white"  class="wpulse" x1="199" y1="0" x2="199" y2="34" stroke="#d8eaf4" stroke-width="3.5"/>
+<line id="wp-red"    class="wpulse" x1="223" y1="0" x2="223" y2="34" stroke="#e53535" stroke-width="3.5"/>
+<line id="wp-yellow" class="wpulse" x1="247" y1="0" x2="247" y2="34" stroke="#f6c90e" stroke-width="3.5"/>
+<line id="wp-orange" class="wpulse" x1="271" y1="0" x2="271" y2="34" stroke="#f97316" stroke-width="3.5"/>
+
+<!-- Terminal block body -->
+<rect x="153" y="30" width="164" height="18" rx="3" fill="#0e1c2e" stroke="#1c2e42" stroke-width="1"/>
+<!-- Terminal posts -->
+<circle cx="175" cy="39" r="4.5" fill="#1a3060" stroke="#3b82f6" stroke-width="1.5"/>
+<circle cx="199" cy="39" r="4.5" fill="#2a3540" stroke="#9ab8c8" stroke-width="1.5"/>
+<circle cx="223" cy="39" r="4.5" fill="#601818" stroke="#e53535" stroke-width="1.5"/>
+<circle cx="247" cy="39" r="4.5" fill="#604010" stroke="#f6c90e" stroke-width="1.5"/>
+<circle cx="271" cy="39" r="4.5" fill="#602508" stroke="#f97316" stroke-width="1.5"/>
+
+<!-- Wire labels above terminals -->
+<text x="175" y="24" font-family="Share Tech Mono,monospace" font-size="7.5" fill="#4a7ae8" text-anchor="middle">A1</text>
+<text x="199" y="24" font-family="Share Tech Mono,monospace" font-size="7.5" fill="#8ab0c8" text-anchor="middle">A2</text>
+<text x="223" y="24" font-family="Share Tech Mono,monospace" font-size="7.5" fill="#e05050" text-anchor="middle">COM</text>
+<text x="247" y="24" font-family="Share Tech Mono,monospace" font-size="7.5" fill="#e8c010" text-anchor="middle">B1</text>
+<text x="271" y="24" font-family="Share Tech Mono,monospace" font-size="7.5" fill="#f08030" text-anchor="middle">B2</text>
+
+<!-- ══ MOTOR HOUSING ═══════════════════════════════ -->
+<!-- Outer housing body -->
+<rect x="48" y="46" width="374" height="268" rx="20" fill="url(#stG)" stroke="#243448" stroke-width="2"/>
+<!-- Top arch accent -->
+<rect x="48" y="46" width="374" height="22" rx="11" fill="#182030" opacity=".9"/>
+<!-- Bottom mounting flange -->
+<rect x="36" y="296" width="398" height="22" rx="4" fill="#0e1820" stroke="#1c2a38" stroke-width="1"/>
+<!-- Flange bolt details -->
+<circle cx="52"  cy="307" r="4" fill="#1a2838" stroke="#283848" stroke-width="1"/>
+<circle cx="418" cy="307" r="4" fill="#1a2838" stroke="#283848" stroke-width="1"/>
+<circle cx="120" cy="307" r="3" fill="#1a2838" stroke="#283848" stroke-width="1"/>
+<circle cx="350" cy="307" r="3" fill="#1a2838" stroke="#283848" stroke-width="1"/>
+
+<!-- ══ COIL A1 (BLUE) — left top ═══════════════════ -->
+<g id="coil-a1">
+  <rect x="62" y="60" width="104" height="108" rx="4" fill="url(#wndPat)" stroke="#281605" stroke-width="1.5"/>
+  <!-- End plates -->
+  <rect x="62" y="60"  width="104" height="9" rx="2" fill="#0a1018" opacity=".8"/>
+  <rect x="62" y="159" width="104" height="9" rx="2" fill="#0a1018" opacity=".8"/>
+  <!-- Side flanges / bobbins -->
+  <rect x="53"  y="63" width="12" height="101" rx="3" fill="#182030"/>
+  <rect x="162" y="63" width="12" height="101" rx="3" fill="#182030"/>
+  <!-- Active glow (JS-controlled fill) -->
+  <rect id="ga1" x="48" y="54" width="132" height="120" rx="8" fill="rgba(0,0,0,0)" filter="url(#gf)"/>
+</g>
+
+<!-- ══ COIL A2 (WHITE) — left bottom ══════════════ -->
+<g id="coil-a2">
+  <rect x="62" y="180" width="104" height="108" rx="4" fill="url(#wndPat)" stroke="#281605" stroke-width="1.5"/>
+  <rect x="62" y="180" width="104" height="9" rx="2" fill="#0a1018" opacity=".8"/>
+  <rect x="62" y="279" width="104" height="9" rx="2" fill="#0a1018" opacity=".8"/>
+  <rect x="53"  y="183" width="12" height="101" rx="3" fill="#182030"/>
+  <rect x="162" y="183" width="12" height="101" rx="3" fill="#182030"/>
+  <rect id="ga2" x="48" y="174" width="132" height="120" rx="8" fill="rgba(0,0,0,0)" filter="url(#gf)"/>
+</g>
+
+<!-- ══ COIL B1 (ORANGE) — right top ══════════════ -->
+<g id="coil-b1">
+  <rect x="304" y="60" width="104" height="108" rx="4" fill="url(#wndPat)" stroke="#281605" stroke-width="1.5"/>
+  <rect x="304" y="60"  width="104" height="9" rx="2" fill="#0a1018" opacity=".8"/>
+  <rect x="304" y="159" width="104" height="9" rx="2" fill="#0a1018" opacity=".8"/>
+  <rect x="294" y="63" width="12" height="101" rx="3" fill="#182030"/>
+  <rect x="403" y="63" width="12" height="101" rx="3" fill="#182030"/>
+  <rect id="gb1" x="290" y="54" width="132" height="120" rx="8" fill="rgba(0,0,0,0)" filter="url(#gf)"/>
+</g>
+
+<!-- ══ COIL B2 (YELLOW) — right bottom ═══════════ -->
+<g id="coil-b2">
+  <rect x="304" y="180" width="104" height="108" rx="4" fill="url(#wndPat)" stroke="#281605" stroke-width="1.5"/>
+  <rect x="304" y="180" width="104" height="9" rx="2" fill="#0a1018" opacity=".8"/>
+  <rect x="304" y="279" width="104" height="9" rx="2" fill="#0a1018" opacity=".8"/>
+  <rect x="294" y="183" width="12" height="101" rx="3" fill="#182030"/>
+  <rect x="403" y="183" width="12" height="101" rx="3" fill="#182030"/>
+  <rect id="gb2" x="290" y="174" width="132" height="120" rx="8" fill="rgba(0,0,0,0)" filter="url(#gf)"/>
+</g>
+
+<!-- ══ ROTOR / PERMANENT MAGNET ═══════════════════ -->
+<!-- Rotor body -->
+<rect x="184" y="50" width="102" height="264" rx="7" fill="url(#rtG)" stroke="#364858" stroke-width="1.5"/>
+<!-- Pole tint overlays -->
+<rect x="184" y="50"  width="102" height="130" rx="7" fill="rgba(50,90,200,.1)"/><!-- N upper -->
+<rect x="184" y="184" width="102" height="130" rx="7" fill="rgba(210,55,55,.1)"/><!-- S lower -->
+<!-- Center shaft line -->
+<rect x="231" y="50" width="8" height="264" rx="2" fill="#3a4a5a" opacity=".6"/>
+
+<!-- Rotor pole divider -->
+<line x1="184" y1="182" x2="286" y2="182" stroke="rgba(255,255,255,.06)" stroke-width="1"/>
+
+<!-- Rotor rotation indicator (rotates in JS around cx=235,cy=182) -->
+<g id="ri">
+  <!-- Indicator line: from center to north pole -->
+  <line x1="235" y1="182" x2="235" y2="65" stroke="rgba(0,200,216,.8)" stroke-width="2" stroke-linecap="round"/>
+  <!-- North cap -->
+  <circle cx="235" cy="70" r="9" fill="rgba(50,90,200,.25)" stroke="rgba(80,130,240,.6)" stroke-width="1.2"/>
+  <text x="235" y="74" font-family="Share Tech Mono,monospace" font-size="8" fill="#80b0e8" text-anchor="middle" font-weight="bold">N</text>
+  <!-- South cap (opposite) -->
+  <circle cx="235" cy="294" r="9" fill="rgba(210,55,55,.25)" stroke="rgba(230,80,80,.6)" stroke-width="1.2"/>
+  <text x="235" y="298" font-family="Share Tech Mono,monospace" font-size="8" fill="#e88888" text-anchor="middle" font-weight="bold">S</text>
+</g>
+
+<!-- Rotor label -->
+<text x="235" y="154" font-family="Rajdhani,sans-serif" font-size="8" font-weight="700" fill="rgba(90,130,190,.4)" text-anchor="middle" letter-spacing=".15em">ROTOR</text>
+<text x="235" y="164" font-family="Share Tech Mono,monospace" font-size="6.5" fill="rgba(90,130,190,.3)" text-anchor="middle">PERM. MAGNET</text>
+<!-- Phase divider label -->
+<text x="235" y="210" font-family="Share Tech Mono,monospace" font-size="6" fill="rgba(90,130,190,.2)" text-anchor="middle">↓ S ↓</text>
+
+<!-- Coil labels -->
+<text x="114" y="97"  font-family="Rajdhani,sans-serif" font-size="8.5" font-weight="700" fill="rgba(59,130,246,.55)" text-anchor="middle" letter-spacing=".15em">STATOR</text>
+<text x="114" y="107" font-family="Share Tech Mono,monospace" font-size="6.5" fill="rgba(59,130,246,.35)" text-anchor="middle">COIL A / Ph.1</text>
+<text x="114" y="214" font-family="Rajdhani,sans-serif" font-size="8.5" font-weight="700" fill="rgba(200,220,230,.45)" text-anchor="middle" letter-spacing=".15em">STATOR</text>
+<text x="114" y="224" font-family="Share Tech Mono,monospace" font-size="6.5" fill="rgba(200,220,230,.3)" text-anchor="middle">COIL A / Ph.2</text>
+<text x="356" y="97"  font-family="Rajdhani,sans-serif" font-size="8.5" font-weight="700" fill="rgba(249,115,22,.55)" text-anchor="middle" letter-spacing=".15em">STATOR</text>
+<text x="356" y="107" font-family="Share Tech Mono,monospace" font-size="6.5" fill="rgba(249,115,22,.35)" text-anchor="middle">COIL B / Ph.1</text>
+<text x="356" y="214" font-family="Rajdhani,sans-serif" font-size="8.5" font-weight="700" fill="rgba(246,201,14,.5)" text-anchor="middle" letter-spacing=".15em">STATOR</text>
+<text x="356" y="224" font-family="Share Tech Mono,monospace" font-size="6.5" fill="rgba(246,201,14,.3)" text-anchor="middle">COIL B / Ph.2</text>
+
+<!-- Internal wire routing (faint dashed) -->
+<path d="M175,48 L175,58 L174,58 L174,114" stroke="rgba(59,130,246,.2)" stroke-width="1.2" stroke-dasharray="3 5" fill="none"/>
+<path d="M199,48 L199,64 L174,64 L174,234" stroke="rgba(200,220,230,.18)" stroke-width="1.2" stroke-dasharray="3 5" fill="none"/>
+<path d="M223,48 L223,57 Q223,58 222,58 L186,58 M223,57 Q224,58 224,58 L284,58" stroke="rgba(229,53,53,.2)" stroke-width="1.2" stroke-dasharray="3 5" fill="none"/>
+<path d="M247,48 L247,58 L296,58 L296,114" stroke="rgba(246,201,14,.2)" stroke-width="1.2" stroke-dasharray="3 5" fill="none"/>
+<path d="M271,48 L271,64 L296,64 L296,234" stroke="rgba(249,115,22,.18)" stroke-width="1.2" stroke-dasharray="3 5" fill="none"/>
+
+<!-- ══ LEAD SCREW / DRIVE SHAFT ════════════════════ -->
+<!-- Shaft body -->
+<rect x="222" y="300" width="26" height="88" rx="2" fill="url(#lsG)" stroke="#364858" stroke-width="1"/>
+<!-- Thread crosshatch -->
+<line x1="222" y1="304" x2="248" y2="313" stroke="#5a6878" stroke-width=".9" opacity=".7"/>
+<line x1="222" y1="311" x2="248" y2="320" stroke="#5a6878" stroke-width=".9" opacity=".7"/>
+<line x1="222" y1="318" x2="248" y2="327" stroke="#5a6878" stroke-width=".9" opacity=".7"/>
+<line x1="222" y1="325" x2="248" y2="334" stroke="#5a6878" stroke-width=".9" opacity=".7"/>
+<line x1="222" y1="332" x2="248" y2="341" stroke="#5a6878" stroke-width=".9" opacity=".7"/>
+<line x1="222" y1="339" x2="248" y2="348" stroke="#5a6878" stroke-width=".9" opacity=".7"/>
+<line x1="222" y1="346" x2="248" y2="355" stroke="#5a6878" stroke-width=".9" opacity=".7"/>
+<line x1="222" y1="353" x2="248" y2="362" stroke="#5a6878" stroke-width=".9" opacity=".7"/>
+<line x1="222" y1="360" x2="248" y2="369" stroke="#5a6878" stroke-width=".9" opacity=".7"/>
+<line x1="222" y1="367" x2="248" y2="376" stroke="#5a6878" stroke-width=".9" opacity=".7"/>
+<line x1="248" y1="304" x2="222" y2="313" stroke="#384858" stroke-width=".9" opacity=".5"/>
+<line x1="248" y1="311" x2="222" y2="320" stroke="#384858" stroke-width=".9" opacity=".5"/>
+<line x1="248" y1="318" x2="222" y2="327" stroke="#384858" stroke-width=".9" opacity=".5"/>
+<line x1="248" y1="325" x2="222" y2="334" stroke="#384858" stroke-width=".9" opacity=".5"/>
+<line x1="248" y1="332" x2="222" y2="341" stroke="#384858" stroke-width=".9" opacity=".5"/>
+<line x1="248" y1="339" x2="222" y2="348" stroke="#384858" stroke-width=".9" opacity=".5"/>
+<line x1="248" y1="346" x2="222" y2="355" stroke="#384858" stroke-width=".9" opacity=".5"/>
+<line x1="248" y1="353" x2="222" y2="362" stroke="#384858" stroke-width=".9" opacity=".5"/>
+<line x1="248" y1="360" x2="222" y2="369" stroke="#384858" stroke-width=".9" opacity=".5"/>
+<line x1="248" y1="367" x2="222" y2="376" stroke="#384858" stroke-width=".9" opacity=".5"/>
+<!-- Lead screw label -->
+<text x="175" y="335" font-family="Rajdhani,sans-serif" font-size="8" font-weight="600" fill="rgba(130,150,180,.4)" text-anchor="middle" letter-spacing=".12em">LEAD SCREW</text>
+<text x="175" y="346" font-family="Share Tech Mono,monospace" font-size="6.5" fill="rgba(130,150,180,.28)" text-anchor="middle">DRIVE SHAFT</text>
+
+<!-- ══ VALVE BODY (BRASS) ══════════════════════════ -->
+<!-- Guide housing (upper) -->
+<rect x="184" y="386" width="102" height="46" rx="4" fill="url(#bG)" stroke="#6a5018" stroke-width="1.5"/>
+<rect x="196" y="394" width="78" height="30" rx="2" fill="rgba(0,0,0,.35)"/>
+
+<!-- Main valve body — left flange -->
+<rect x="78"  y="426" width="84"  height="116" rx="3" fill="url(#bG)" stroke="#6a5018" stroke-width="1.5"/>
+<!-- Main valve body — center column -->
+<rect x="158" y="420" width="154" height="124" rx="3" fill="url(#bG)" stroke="#6a5018" stroke-width="1.5"/>
+<!-- Main valve body — right flange -->
+<rect x="308" y="426" width="84"  height="116" rx="3" fill="url(#bG)" stroke="#6a5018" stroke-width="1.5"/>
+
+<!-- Interior flow path (dark void) -->
+<!-- Left chamber void -->
+<rect x="86"  y="434" width="72" height="24" rx="2" fill="url(#viG)"/>
+<!-- Left to center passage -->
+<rect x="156" y="434" width="39" height="24" rx="0" fill="url(#viG)"/>
+<!-- Center passage down to orifice -->
+<rect x="227" y="434" width="16" height="100" rx="0" fill="url(#viG)" opacity=".9"/>
+<!-- Right to center passage -->
+<rect x="275" y="434" width="39" height="24" rx="0" fill="url(#viG)"/>
+<!-- Right chamber void -->
+<rect x="312" y="434" width="72" height="24" rx="2" fill="url(#viG)"/>
+
+<!-- Flow path curve hints (very subtle) -->
+<path d="M 92 446 Q 155 446 186 450 Q 220 456 227 500" stroke="rgba(0,200,216,.15)" stroke-width="1.5" fill="none"/>
+<path d="M 378 446 Q 315 446 284 450 Q 250 456 243 500" stroke="rgba(0,200,216,.15)" stroke-width="1.5" fill="none"/>
+
+<!-- Valve seat ring -->
+<ellipse cx="235" cy="528" rx="14" ry="6" fill="#0a0806" stroke="#907028" stroke-width="1.5"/>
+<ellipse cx="235" cy="524" rx="11" ry="4" fill="none" stroke="#c8a840" stroke-width=".8"/>
+
+<!-- Valve seat label -->
+<text x="310" y="514" font-family="Rajdhani,sans-serif" font-size="8" font-weight="700" fill="rgba(197,168,74,.42)" text-anchor="start" letter-spacing=".1em">VALVE SEAT</text>
+<text x="310" y="525" font-family="Share Tech Mono,monospace" font-size="6.5" fill="rgba(197,168,74,.3)" text-anchor="start">ORIFICE</text>
+<line x1="308" y1="519" x2="252" y2="524" stroke="rgba(197,168,74,.2)" stroke-width=".8"/>
+
+<!-- Bottom cap -->
+<rect x="194" y="538" width="82" height="20" rx="4" fill="url(#bG)" stroke="#6a5018" stroke-width="1.5"/>
+
+<!-- ══ COPPER PIPES ════════════════════════════════ -->
+<!-- Left inlet pipe -->
+<rect x="0" y="438" width="80" height="36" fill="url(#cpG)" stroke="#6a3810" stroke-width="1.5"/>
+<!-- Left pipe bore -->
+<rect x="0" y="446" width="80" height="20" fill="rgba(0,0,0,.55)"/>
+<!-- Left pipe end flange -->
+<rect x="0" y="435" width="7" height="42" fill="#c87838" opacity=".5"/>
+
+<!-- Right outlet pipe -->
+<rect x="390" y="438" width="80" height="36" fill="url(#cpG)" stroke="#6a3810" stroke-width="1.5"/>
+<rect x="390" y="446" width="80" height="20" fill="rgba(0,0,0,.55)"/>
+<rect x="463" y="435" width="7" height="42" fill="#c87838" opacity=".5"/>
+
+<!-- Pipe Labels -->
+<text x="40" y="432" font-family="Rajdhani,sans-serif" font-size="10" font-weight="700" fill="rgba(180,115,51,.75)" text-anchor="middle" letter-spacing=".1em">INLET</text>
+<text x="430" y="432" font-family="Rajdhani,sans-serif" font-size="10" font-weight="700" fill="rgba(180,115,51,.75)" text-anchor="middle" letter-spacing=".1em">OUTLET</text>
+
+<!-- Flow arrows -->
+<g id="farrow-in" fill="rgba(0,200,216,.5)">
+  <polygon points="16,452 28,456 16,460"/>
+  <polygon points="30,452 42,456 30,460"/>
+</g>
+<g id="farrow-out" fill="rgba(0,200,216,.5)">
+  <polygon points="420,452 432,456 420,460"/>
+  <polygon points="434,452 446,456 434,460"/>
+</g>
+
+<!-- ══ REFRIGERANT FLOW PARTICLES ════════════════ -->
+<g id="fpart" opacity="0">
+  <!-- Left-side particles flowing toward center -->
+  <circle r="2.8" fill="rgba(0,200,216,.85)">
+    <animate attributeName="cx" from="-5" to="226" dur="1.5s" repeatCount="indefinite"/>
+    <animate attributeName="cy" values="456;456;456;530" keyTimes="0;.55;.7;1" dur="1.5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;.9;.9;0" keyTimes="0;.08;.75;1" dur="1.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="2.2" fill="rgba(0,220,245,.7)">
+    <animate attributeName="cx" from="-5" to="226" dur="1.5s" begin="0.25s" repeatCount="indefinite"/>
+    <animate attributeName="cy" values="456;456;456;530" keyTimes="0;.55;.7;1" dur="1.5s" begin="0.25s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;.8;.8;0" keyTimes="0;.08;.75;1" dur="1.5s" begin="0.25s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="2" fill="rgba(0,200,216,.55)">
+    <animate attributeName="cx" from="-5" to="226" dur="1.5s" begin="0.5s" repeatCount="indefinite"/>
+    <animate attributeName="cy" values="456;456;456;530" keyTimes="0;.55;.7;1" dur="1.5s" begin="0.5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;.7;.7;0" keyTimes="0;.08;.75;1" dur="1.5s" begin="0.5s" repeatCount="indefinite"/>
+  </circle>
+  <!-- Right-side particles flowing from center -->
+  <circle r="2.8" fill="rgba(0,200,216,.85)">
+    <animate attributeName="cx" from="244" to="475" dur="1.5s" begin="0.05s" repeatCount="indefinite"/>
+    <animate attributeName="cy" values="530;456;456;456" keyTimes="0;.3;.45;1" dur="1.5s" begin="0.05s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;.9;.9;0" keyTimes="0;.08;.75;1" dur="1.5s" begin="0.05s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="2.2" fill="rgba(0,220,245,.7)">
+    <animate attributeName="cx" from="244" to="475" dur="1.5s" begin="0.3s" repeatCount="indefinite"/>
+    <animate attributeName="cy" values="530;456;456;456" keyTimes="0;.3;.45;1" dur="1.5s" begin="0.3s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;.8;.8;0" keyTimes="0;.08;.75;1" dur="1.5s" begin="0.3s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="2" fill="rgba(0,200,216,.55)">
+    <animate attributeName="cx" from="244" to="475" dur="1.5s" begin="0.55s" repeatCount="indefinite"/>
+    <animate attributeName="cy" values="530;456;456;456" keyTimes="0;.3;.45;1" dur="1.5s" begin="0.55s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;.7;.7;0" keyTimes="0;.08;.75;1" dur="1.5s" begin="0.55s" repeatCount="indefinite"/>
+  </circle>
+</g>
+
+<!-- ══ VALVE NEEDLE ═══════════════════════════════ -->
+<!-- Animated group — JS translates this -->
+<g id="ng">
+  <!-- Needle guide bore (static appearance inside guide housing) -->
+  <rect x="230" y="387" width="10" height="45" rx="1" fill="#080c10"/>
+  <!-- Needle shaft -->
+  <rect x="230" y="298" width="10" height="234" rx="2" fill="url(#ndG)" stroke="#303848" stroke-width=".5"/>
+  <!-- Specular highlight -->
+  <rect x="232" y="298" width="2" height="234" rx="1" fill="rgba(255,255,255,.28)"/>
+  <!-- Needle tip cone -->
+  <polygon points="230,530 240,530 235,543" fill="#7a8898" stroke="#303848" stroke-width=".5"/>
+  <polygon points="232,530 235,530 235,543" fill="rgba(255,255,255,.18)"/>
+</g>
+
+<!-- ══ COMPONENT LABEL ANNOTATIONS ═══════════════ -->
+<text x="48" y="55"  font-family="Rajdhani,sans-serif" font-size="8" font-weight="600" fill="rgba(90,130,170,.4)" letter-spacing=".15em">STEPPER MOTOR HOUSING</text>
+<text x="235" y="14" font-family="Rajdhani,sans-serif" font-size="8.5" font-weight="700" fill="rgba(0,200,216,.3)" text-anchor="middle" letter-spacing=".2em">5-WIRE UNIPOLAR DRIVE</text>
+
+</svg>
+</div><!-- /lp -->
+
+<!-- Divider -->
+<div id="div"></div>
+
+<!-- ══════════ RIGHT PANEL ══════════════════════════════ -->
+<div id="rp">
+
+  <!-- Title -->
+  <div>
+    <div class="pt">ELECTRONIC EXPANSION VALVE</div>
+    <div class="ps">Unipolar Stepper Motor — Operation &amp; Training Visual</div>
+  </div>
+
+  <!-- Status Row -->
+  <div class="srow">
+    <div class="badge12">12 VDC <span class="bdot"></span></div>
+    <div id="disp" class="dirindicator dir-open">▲ OPENING</div>
+    <div class="steps-total">480 STEPS FULL TRAVEL</div>
+  </div>
+
+  <!-- Wire Legend -->
+  <div>
+    <div class="slbl">Wire Designation &amp; Coil Assignment</div>
+    <div class="wlegend">
+      <div id="wr-red"    class="wrow" style="--ac:rgba(229,53,53,.5);--aglow:rgba(229,53,53,.15)">
+        <div class="wdot" style="background:#e53535"></div>
+        <div class="wlbl">RED — COM&nbsp;&nbsp; +12 VDC Common</div>
+        <div class="wfunc" style="color:#e05050">ALWAYS ON</div>
+      </div>
+      <div id="wr-blue"   class="wrow" style="--ac:rgba(59,130,246,.5);--aglow:rgba(59,130,246,.15)">
+        <div class="wdot" style="background:#3b82f6"></div>
+        <div class="wlbl">BLUE — A1&nbsp;&nbsp; Coil A, End 1</div>
+        <div class="wfunc" style="color:#608af0">STEP 1</div>
+      </div>
+      <div id="wr-orange" class="wrow" style="--ac:rgba(249,115,22,.5);--aglow:rgba(249,115,22,.15)">
+        <div class="wdot" style="background:#f97316"></div>
+        <div class="wlbl">ORANGE — B1&nbsp;&nbsp; Coil B, End 1</div>
+        <div class="wfunc" style="color:#f08040">STEP 2</div>
+      </div>
+      <div id="wr-white"  class="wrow" style="--ac:rgba(216,234,244,.35);--aglow:rgba(216,234,244,.1)">
+        <div class="wdot" style="background:#d8eaf4;outline:1px solid #6a7a8a;outline-offset:1px"></div>
+        <div class="wlbl">WHITE — A2&nbsp;&nbsp; Coil A, End 2</div>
+        <div class="wfunc" style="color:#9ab8c8">STEP 3</div>
+      </div>
+      <div id="wr-yellow" class="wrow" style="--ac:rgba(246,201,14,.45);--aglow:rgba(246,201,14,.12)">
+        <div class="wdot" style="background:#f6c90e"></div>
+        <div class="wlbl">YELLOW — B2&nbsp;&nbsp; Coil B, End 2</div>
+        <div class="wfunc" style="color:#e0b820">STEP 4</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firing Sequence -->
+  <div>
+    <div class="slbl">Full-Step Firing Sequence — Opening Direction</div>
+    <div class="fseq">
+      <div id="sc0" class="scell" style="--ac:#3b82f6;--abg:rgba(59,130,246,.09);--aglow:rgba(59,130,246,.3)">
+        <span class="snum">STEP 1</span>
+        <span class="swire" style="color:#3b82f6">BLUE</span>
+      </div>
+      <div id="sc1" class="scell" style="--ac:#f97316;--abg:rgba(249,115,22,.09);--aglow:rgba(249,115,22,.3)">
+        <span class="snum">STEP 2</span>
+        <span class="swire" style="color:#f97316">ORANGE</span>
+      </div>
+      <div id="sc2" class="scell" style="--ac:#d8eaf4;--abg:rgba(216,234,244,.06);--aglow:rgba(216,234,244,.2)">
+        <span class="snum">STEP 3</span>
+        <span class="swire" style="color:#d8eaf4">WHITE</span>
+      </div>
+      <div id="sc3" class="scell" style="--ac:#f6c90e;--abg:rgba(246,201,14,.09);--aglow:rgba(246,201,14,.3)">
+        <span class="snum">STEP 4</span>
+        <span class="swire" style="color:#f6c90e">YELLOW</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Readouts -->
+  <div>
+    <div class="slbl">Live Readouts</div>
+    <div class="readouts">
+      <div class="rbox">
+        <span class="rlbl">Step Position</span>
+        <span class="rval" id="ro-pos">000<span class="runit">/480</span></span>
+      </div>
+      <div class="rbox">
+        <span class="rlbl">Valve Open</span>
+        <span class="rval" id="ro-pct">0<span class="runit">%</span></span>
+      </div>
+      <div class="rbox">
+        <span class="rlbl">Firing Step</span>
+        <span class="rval" id="ro-seq">1<span class="runit">/4</span></span>
+      </div>
+      <div class="rbox">
+        <span class="rlbl">Active Coil</span>
+        <span class="rval" id="ro-coil" style="font-size:19px;letter-spacing:.04em">A-1</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="cbtn" id="btn-dir">↕ DIRECTION</button>
+    <button class="cbtn" id="btn-spd">⚡ SPEED: SLOW</button>
+    <button class="cbtn" id="btn-pause">⏸ PAUSE</button>
+    <button class="cbtn" id="btn-rst">↺ RESET</button>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer" style="margin-top:auto">
+    Fujitsu VRF / Ductless EEV — Unipolar 5-Wire — Full-Step Mode — 480 Steps Full Travel
+  </div>
+
+</div><!-- /rp -->
+</div><!-- /slide -->
+
+<script>
+// ── State ──────────────────────────────────────────────────────
+const S = {
+  pos:    0,      // 0..480
+  idx:    0,      // 0..3 firing step
+  dir:    1,      // 1=opening, -1=closing
+  angle:  0,      // cumulative rotor degrees
+  run:    true,
+  spd:    480,    // ms per tick
+  timer:  null,
+};
+
+// Firing sequence
+const SEQ = [
+  { pulse:'wp-blue',   row:'wr-blue',   glow:'ga1', cell:'sc0', label:'A-1', color:'#3b82f6' },
+  { pulse:'wp-orange', row:'wr-orange', glow:'gb1', cell:'sc1', label:'B-1', color:'#f97316' },
+  { pulse:'wp-white',  row:'wr-white',  glow:'ga2', cell:'sc2', label:'A-2', color:'#d8eaf4' },
+  { pulse:'wp-yellow', row:'wr-yellow', glow:'gb2', cell:'sc3', label:'B-2', color:'#f6c90e' },
+];
+
+const GLOW = {
+  'ga1':'rgba(59,130,246,.38)',
+  'gb1':'rgba(249,115,22,.38)',
+  'ga2':'rgba(216,234,244,.28)',
+  'gb2':'rgba(246,201,14,.34)',
+};
+
+// ── DOM refs ──────────────────────────────────────────────────
+const ri   = document.getElementById('ri');
+const ng   = document.getElementById('ng');
+const fpt  = document.getElementById('fpart');
+const disp = document.getElementById('disp');
+const roPos= document.getElementById('ro-pos');
+const roPct= document.getElementById('ro-pct');
+const roSeq= document.getElementById('ro-seq');
+const roCl = document.getElementById('ro-coil');
+
+// ── Clear all active states ───────────────────────────────────
+function clearAll() {
+  SEQ.forEach(s => {
+    const wp = document.getElementById(s.pulse);
+    wp.style.opacity = '0';
+    wp.classList.remove('live');
+    document.getElementById(s.row).classList.remove('active');
+    document.getElementById(s.glow).setAttribute('fill','rgba(0,0,0,0)');
+    document.getElementById(s.cell).classList.remove('active');
+  });
+}
+
+// ── Update all visuals ────────────────────────────────────────
+function draw() {
+  clearAll();
+  const s = SEQ[S.idx];
+
+  // Active wire pulse
+  const wp = document.getElementById(s.pulse);
+  wp.style.opacity = '1';
+  wp.classList.add('live');
+
+  // RED always on
+  const wpR = document.getElementById('wp-red');
+  wpR.style.opacity = '1';
+  wpR.classList.add('live');
+
+  // Wire legend rows
+  document.getElementById(s.row).classList.add('active');
+  document.getElementById('wr-red').classList.add('active');
+
+  // Coil glow
+  document.getElementById(s.glow).setAttribute('fill', GLOW[s.glow]);
+
+  // Firing sequence cell
+  document.getElementById(s.cell).classList.add('active');
+
+  // Rotor indicator rotation
+  ri.setAttribute('transform', `rotate(${S.angle},235,182)`);
+
+  // Needle position: 0=closed (y+0), 480=open (y-40)
+  const yOff = -(S.pos / 480) * 40;
+  ng.setAttribute('transform', `translate(0,${yOff})`);
+
+  // Flow particles opacity
+  const frac = S.pos / 480;
+  fpt.style.opacity = frac > 0.04 ? String(Math.min(frac * 1.8, 1)) : '0';
+
+  // Direction indicator
+  disp.textContent = S.dir === 1 ? '▲ OPENING' : '▼ CLOSING';
+  disp.className   = 'dirindicator ' + (S.dir === 1 ? 'dir-open' : 'dir-close');
+
+  // Readouts
+  const pStr = String(S.pos).padStart(3,'0');
+  roPos.innerHTML = `${pStr}<span class="runit">/480</span>`;
+  roPct.innerHTML = `${Math.round(frac*100)}<span class="runit">%</span>`;
+  roSeq.innerHTML = `${S.idx+1}<span class="runit">/4</span>`;
+  roCl.innerHTML  = s.label;
+  roCl.style.color = s.color;
+}
+
+// ── Tick ──────────────────────────────────────────────────────
+function tick() {
+  S.idx   = (S.idx + S.dir + 4) % 4;
+  S.pos   = Math.max(0, Math.min(480, S.pos + S.dir));
+  S.angle += S.dir * 90;
+  if (S.pos <= 0 || S.pos >= 480) S.dir *= -1;
+  draw();
+}
+
+// ── Timer management ──────────────────────────────────────────
+function startTimer() {
+  clearInterval(S.timer);
+  S.timer = setInterval(tick, S.spd);
+}
+function stopTimer() {
+  clearInterval(S.timer);
+  S.timer = null;
+}
+
+// ── Controls ──────────────────────────────────────────────────
+document.getElementById('btn-dir').addEventListener('click', () => {
+  S.dir *= -1;
+});
+
+document.getElementById('btn-spd').addEventListener('click', function() {
+  if (S.spd === 480) {
+    S.spd = 75; this.textContent = '⚡ SPEED: FAST';
+  } else if (S.spd === 75) {
+    S.spd = 200; this.textContent = '⚡ SPEED: MED';
+  } else {
+    S.spd = 480; this.textContent = '⚡ SPEED: SLOW';
+  }
+  if (S.run) startTimer();
+});
+
+document.getElementById('btn-pause').addEventListener('click', function() {
+  if (S.run) {
+    stopTimer(); S.run = false;
+    this.textContent = '▶ RESUME';
+  } else {
+    S.run = true; startTimer();
+    this.textContent = '⏸ PAUSE';
+  }
+});
+
+document.getElementById('btn-rst').addEventListener('click', () => {
+  S.pos=0; S.idx=0; S.dir=1; S.angle=0;
+  draw();
+});
+
+// ── Init ──────────────────────────────────────────────────────
+// RED wire is always pulsing — initialise directly
+const wpR = document.getElementById('wp-red');
+wpR.style.opacity = '1';
+wpR.classList.add('live');
+
+draw();
+startTimer();
+</script>
+</body>
+</html>
